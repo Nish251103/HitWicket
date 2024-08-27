@@ -6,17 +6,13 @@ import rel
 
 app = Flask(__name__)
 
-# Constants
 BOARD_SIZE = 5
-
-# Game variables
 board = [['.' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 captured_by_player1 = []
 captured_by_player2 = []
 current_player = 'Player 1'
 winner = None
 
-# Initialize the board with pieces
 def initialize_board():
     global board, captured_by_player1, captured_by_player2, current_player, winner
     board = [['.' for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
@@ -41,7 +37,7 @@ def initialize_board():
 
 initialize_board()
 
-# Check if a piece selection is valid
+
 def is_valid_selection(row, col):
     """Check if the selected piece belongs to the current player."""
     piece = board[row][col]
@@ -58,7 +54,7 @@ def move_piece(x, y, move):
     player_pieces = ['P1', 'H1', 'H2'] if piece.isupper() else ['p1', 'h1', 'h2']
     new_x, new_y = x, y
 
-    # Calculate new position based on move
+
     if piece.lower() == 'p1':  # Pawn
         if move == 'L':
             new_y -= 1
@@ -67,7 +63,7 @@ def move_piece(x, y, move):
         elif move == 'F':
             new_x += 1 if current_player == 'Player 1' else -1
         elif move == 'B':
-            # Prevent moving "backward" from initial row
+           
             if (current_player == 'Player 1' and x == 0) or (current_player == 'Player 2' and x == BOARD_SIZE - 1):
                 return False
             new_x -= 1 if current_player == 'Player 1' else 1
@@ -79,7 +75,7 @@ def move_piece(x, y, move):
         elif move == 'F':
             new_x += 2 if current_player == 'Player 1' else -2
         elif move == 'B':
-            # Prevent moving "backward" from initial row
+            
             if (current_player == 'Player 1' and x == 0) or (current_player == 'Player 2' and x == BOARD_SIZE - 1):
                 return False
             new_x -= 2 if current_player == 'Player 1' else 2
@@ -97,19 +93,18 @@ def move_piece(x, y, move):
             new_x -= 2 if current_player == 'Player 1' else 2
             new_y += 2
 
-    # Check if new position is out of bounds
+
     if not (0 <= new_x < BOARD_SIZE and 0 <= new_y < BOARD_SIZE):
         return False
 
-    # Prevent moving onto a piece of the same player
+
     if board[new_x][new_y] in player_pieces:
         return False
 
-    # Capture opponent piece if present
     if board[new_x][new_y] in opponent_pieces:
         print(f"{board[new_x][new_y]} captured!")
 
-        # Track captured pieces
+
         if current_player == 'Player 1':
             captured_by_player1.append(board[new_x][new_y])
         else:
@@ -117,11 +112,9 @@ def move_piece(x, y, move):
 
         board[new_x][new_y] = '.'
 
-    # Move piece to new position
+
     board[x][y] = '.'
     board[new_x][new_y] = piece
-
-    # Check for a winner after moving the piece
     winner = check_winner()
 
     return True
@@ -147,6 +140,8 @@ def reset_game():
 def switch_player():
     global current_player
     current_player = 'Player 2' if current_player == 'Player 1' else 'Player 1'
+
+
 
 # API endpoint to get game state
 @app.route('/game_state', methods=['GET'])
@@ -180,12 +175,14 @@ def move():
     else:
         return jsonify(success=False, message="Invalid move!")
 
+
+
 # Homepage
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# WebSocket Client Logic
+# WebSocket Client
 def run_websocket_client():
     def on_message(ws, message):
         print(f"Received message: {message}")
@@ -212,8 +209,5 @@ def run_websocket_client():
     rel.dispatch()
 
 if __name__ == '__main__':
-    # Start the WebSocket client in a new thread
     _thread.start_new_thread(run_websocket_client, ())
-
-    # Start the Flask server
     app.run(debug=True)
