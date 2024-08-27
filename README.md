@@ -1,9 +1,10 @@
-#Nishchal_21BCE11061
+# Nishchal_21BCE11061
 
-A turn-based chess-like game with a server-client architecture, utilizing websockets for real-time communication and a web-based user interface
+
 
 
 # Chess-Like Game with Web Interface
+A turn-based chess-like game with a server-client architecture, utilizing websockets for real-time communication and a web-based user interface
 
 ## Getting Started
 
