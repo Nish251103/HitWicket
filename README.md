@@ -88,10 +88,3 @@ A turn-based chess-like game with a server-client architecture, utilizing websoc
 ### Troubleshooting
 - **WebSocket Issues**: Ensure the WebSocket server URL is correct and that the server is running.
 - **Flask Errors**: Check that all required dependencies are installed and that the Flask server is running without issues.
-
-### Contributing
-If you wish to contribute, please fork the repository and submit a pull request. Bug reports and feature requests are welcome.
-
----
-
-Feel free to customize any part of this README file to better suit your project specifics!
