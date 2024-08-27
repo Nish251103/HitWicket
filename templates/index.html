@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5x5 Chess Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 100px);
+            grid-gap: 2px;
+            margin-bottom: 20px;
+            background-color: #2c2c2c;
+            padding: 5px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #2c2c2c;
+            color: white;
+            border: 2px solid white; /* White outline for each cell */
+            box-sizing: border-box; 
+        }
+        .white-piece {
+            color: #ffffff;
+        }
+        .black-piece {
+            color: #000000;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #winner-message {
+            display: none;
+            color: green;
+            font-size: 24px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>5x5 Chess Game</h1>
+    <div id="board" class="board"></div>
+    <div id="buttons"></div>
+    <div id="turn">Current Turn: Player 1</div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:5000');
+
+        socket.onopen = function() {
+            console.log('Connected to WebSocket server');
+        };
+
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.board) {
+                updateBoard(data.board, data.current_player);
+            } else if (data.winner) {
+                alert(data.winner);
+            }
+        };
+
+        socket.onclose = function() {
+            console.log('Disconnected from WebSocket server');
+        };
+        let selectedPiece = null;
+        let selectedPos = null;
+        let currentPlayer = 'Player 1';
+
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchGameState();
+        });
+
+        function fetchGameState() {
+            fetch('/game_state')
+                .then(response => response.json())
+                .then(data => {
+                    drawBoard(data.board);
+                    document.getElementById('turn').textContent = "Current Turn: " + data.current_player;
+                    currentPlayer = data.current_player;
+                });
+        }
+
+        function drawBoard(board) {
+            const boardDiv = document.getElementById('board');
+            boardDiv.innerHTML = '';
+
+            for (let row = 0; row < board.length; row++) {
+                for (let col = 0; col < board[row].length; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell ';
+
+                    // Differentiate pieces by color
+                    if (board[row][col] !== '.') {
+                        if (board[row][col].toUpperCase() === board[row][col]) {
+                            cell.classList.add('white-piece');  // Player 1 pieces in white
+                        } else {
+                            cell.classList.add('black-piece');  // Player 2 pieces in black
+                        }
+                    }
+
+                    cell.textContent = board[row][col] !== '.' ? board[row][col] : '';
+                    cell.onclick = () => handleCellClick(row, col, board[row][col]);
+                    boardDiv.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(row, col, piece) {
+            if (!selectedPiece) {
+                selectPiece(row, col, piece);
+            } else {
+                showMoveButtons(piece);
+            }
+        }
+
+        function selectPiece(row, col, piece) {
+            fetch('/select_piece', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({row: row, col: col})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.valid) {
+                    selectedPiece = piece;
+                    selectedPos = { row, col };
+                    showMoveButtons(data.piece);
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function showMoveButtons(piece) {
+            const buttonsDiv = document.getElementById('buttons');
+            buttonsDiv.innerHTML = '';
+
+            const moves = piece === 'P1' || piece === 'p1' ? ['L', 'R', 'F', 'B'] :
+                          piece === 'H1' || piece === 'h1' ? ['L', 'R', 'F', 'B'] : ['FL', 'FR', 'BL', 'BR'];
+
+            moves.forEach(move => {
+                const button = document.createElement('button');
+                button.textContent = move;
+                button.className = 'button';
+                button.onclick = () => makeMove(selectedPos.row, selectedPos.col, move);
+                buttonsDiv.appendChild(button);
+            });
+        }
+
+        function makeMove(x, y, move) {
+            fetch('/move_piece', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({x: x, y: y, move: move})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    selectedPiece = null;
+                    fetchGameState();
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+        function displayWinner(winner) {
+            const winnerMessage = document.getElementById('winner-message');
+            winnerMessage.textContent = `${winner} wins!`;
+            winnerMessage.style.display = 'block';
+            setTimeout(() => {
+                winnerMessage.style.display = 'none';
+            }, 30000);  // Hide the message after 3 seconds
+        }
+    </script>
+    
+</body>
+</html>
